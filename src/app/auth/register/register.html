@@ -1,0 +1,33 @@
+<form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+    <h2 class="form-title">Registration</h2>
+    <!-- <input type="text" placeholder="Username" formControlName="name" />
+    <input type="email" placeholder="Email" formControlName="email" />
+    <input type="password" placeholder="Password" formControlName="password" />
+    <button type="submit">Register</button> -->
+
+    <div class="form">
+        <input type="text" placeholder="Username" formControlName="name" />
+        <small *ngIf="registerForm.get('name')?.touched && registerForm.get('name')?.hasError('required')">Name is required</small>
+    </div>
+    <div>
+     <input type="email" placeholder="Email" formControlName="email" />
+     <small *ngIf="registerForm.get('name')?.touched && registerForm.get('name')?.hasError('required')">Please enter a valid Email</small>
+    </div>
+    <div>
+     <input type="text" placeholder="MobileNo" formControlName="mobile" />
+     <small *ngIf="registerForm.get('mobile')?.touched && registerForm.get('mobile')?.hasError('required')">Mobile number is required</small>
+    </div>
+    <div>
+     <input type="password" placeholder="Password" formControlName="password" />
+        <small *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.hasError('required')">Password is required</small>
+    </div>
+    
+     <button type="submit" class="btn-primary"
+     [disabled]="!registerForm.valid">Register
+    </button>
+
+    <p class="login-line">
+      Already have an account? <a routerLink="/login">Please login</a>
+    </p>
+</form>
+<div>   </div>

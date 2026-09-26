@@ -1,0 +1,197 @@
+Home page — fetching profile
+
+1. home.html (the page)
+
+html
+<h2>Welcome, {{ user.name }}</h2>
+<p>Email: {{ user.email }}</p>
+<p><strong>Mobile: {{ user.mobile }}</strong></p>
+
+Displays user.name, user.email, user.mobile — but user starts as undefined (declared as user: any; with no initial value). This template binding works because Angular just renders nothing until user gets populated.
+
+2. Home.ts → ngOnInit()
+
+typescript
+ngOnInit() {
+  this.authService.getUserProfile().subscribe({
+    next: (data) => {
+      console.log(data);
+      if (data.status == 'success') {
+        this.user = data.data;
+        this.cdr.detectChanges();
+      }
+    },
+    error: (err) => console.log(err)
+  });
+}
+
+ngOnInit() runs automatically the moment the Home component loads (right after router.navigate(['/home']) swaps it in). It immediately calls the service → jumps to →
+
+3. auth-service.ts
+
+typescript
+getUserProfile(): Observable<any> {
+  return this.http.get(`${this.baseUrl}/user`, { withCredentials: true });
+}
+
+GET http://localhost:5000/api/user, withCredentials: true → browser auto-attaches the token cookie stored during login → jumps to →
+
+4. app.js
+
+javascript
+app.get("/api/user", async (req, res) => {
+  const token = req.cookies.token;
+  const decoded = jwt.verify(token, JWT_SECRET);
+  const user = await User.findById(decoded.id).select('-password');
+  return res.status(200).json({ status: 'success', data: user });
+});
+
+Verifies the cookie's JWT, fetches the user from MongoDB (minus password) → responds.
+
+5. Back to Home.ts
+
+typescript
+this.user = data.data;
+this.cdr.detectChanges();
+
+data.data is the user object from step 4's response → assigned to this.user → template (home.html) immediately re-renders with real name/email/mobile.
+
+Why this.cdr.detectChanges() is here: normally Angular auto-detects changes and updates the view. This manual call forces an immediate re-render — likely added because the response arrives via an async HTTP callback and the developer wanted to guarantee the UI updates right away rather than waiting for Angular's next automatic change-detection cycle.
+
+Logout — from the Home page
+
+1. home.html
+
+html
+<button (click)="logout()" class="btn-primary">Logout</button>
+
+User clicks → (click) fires logout() in Home.ts → jumps to →
+
+2. Home.ts
+
+typescript
+logout() {
+  this.authService.logout().subscribe({
+    next: (data) => {
+      window.alert(data.message);
+      this.router.navigate(['/login']);
+    },
+    error: (err) => {
+      console.log(err);
+      window.alert('Error logging out. Please try again.');
+    }
+  });
+}
+
+Calls the service → jumps to →
+
+3. auth-service.ts
+
+typescript
+logout(): Observable<any> {
+  return this.http.post(`${this.baseUrl}/logout`, {}, {withCredentials: true});
+}
+
+POST http://localhost:5000/api/logout → jumps to →
+
+4. app.js
+
+javascript
+app.post("/api/logout", (req, res) => {
+  res.clearCookie('token', { httpOnly: true, secure: false, sameSite: 'strict' });
+  return res.status(200).json({ status: 'success', message: 'Logout successful' });
+});
+
+Sends a Set-Cookie that expires the cookie immediately — browser deletes token from its jar.
+
+5. Back to Home.ts
+
+typescript
+window.alert(data.message);        // shows "Logout successful" popup
+this.router.navigate(['/login']);  // page changes: Home → Login
+
+Matches {path:"login", component:Login} in your route table → renders Login component.
+
+Full, complete, real-code map
+URL: localhost:4200/  → routes.ts → redirects to /login → Login component renders
+
+register.html → Register.ts → auth-service.ts → app.js (/api/register) → back to Register.ts
+   (stays on register page — no redirect)
+
+login.html → Login.ts → auth-service.ts → app.js (/api/login) → back to Login.ts
+   → router.navigate(['/home']) → routes.ts matches "home" → Home component renders
+
+Home.ts (ngOnInit, fires automatically on load)
+   → auth-service.ts → app.js (/api/user) → back to Home.ts
+   → this.user = data.data → home.html re-renders with real name/email/mobile
+
+home.html (Logout button clicked)
+   → Home.ts logout() → auth-service.ts → app.js (/api/logout)
+   → back to Home.ts → alert shown → router.navigate(['/login']) → Login component renders
+
+This is now the entire app's real request/navigation flow, page to page, with every file and line accounted for.
+
+add register
+
+Here's the complete map with registration folded back in, in the correct place at the start of the flow.
+
+Full, complete, real-code map
+URL: localhost:4200/  → routes.ts → redirects to /login → Login component renders
+   (routes.ts: {path:"", redirectTo: "login", pathMatch: "full"})
+
+──────────────────────────────────────────────
+REGISTER FLOW
+──────────────────────────────────────────────
+register.html → (ngSubmit)="onSubmit()"
+   → Register.ts → this.authService.register(this.registerForm.value)
+   → auth-service.ts → http.post(`${baseUrl}/register`, user)   [no withCredentials — no cookie needed]
+   → app.js → app.post('/api/register', ...)
+        - validates all fields present
+        - checks MongoDB for existing email (User.findOne)
+        - hashes password with bcrypt
+        - creates new user (User.create)
+        - responds 201 { status: 'success', user: newUser }
+   → back to Register.ts → next: (data) => console.log(data)
+   (NO router.navigate here — user stays on the register page)
+
+──────────────────────────────────────────────
+LOGIN FLOW
+──────────────────────────────────────────────
+login.html → (ngSubmit)="onSubmit()"
+   → Login.ts → validity check → this.authService.login(this.LoginForm.value)
+   → auth-service.ts → http.post(`${baseUrl}/login`, user, {withCredentials: true})
+   → app.js → app.post('/api/login', ...)
+        - finds user by email
+        - bcrypt.compare password
+        - jwt.sign → token
+        - res.cookie('token', ...) sets httpOnly cookie
+        - responds 200 { status: 'success', token }
+   → back to Login.ts → if data.status === 'success' → router.navigate(['/home'])
+   → routes.ts matches "home" → Home component renders
+
+──────────────────────────────────────────────
+HOME PAGE — PROFILE FETCH (runs automatically)
+──────────────────────────────────────────────
+Home.ts → ngOnInit() fires on load
+   → this.authService.getUserProfile()
+   → auth-service.ts → http.get(`${baseUrl}/user`, {withCredentials: true})
+        [browser auto-attaches the token cookie from login]
+   → app.js → app.get('/api/user', ...)
+        - reads req.cookies.token
+        - jwt.verify(token, JWT_SECRET)
+        - User.findById(decoded.id).select('-password')
+        - responds 200 { status: 'success', data: user }
+   → back to Home.ts → this.user = data.data → this.cdr.detectChanges()
+   → home.html re-renders with real name/email/mobile
+
+──────────────────────────────────────────────
+LOGOUT FLOW
+──────────────────────────────────────────────
+home.html → (click)="logout()"
+   → Home.ts → this.authService.logout()
+   → auth-service.ts → http.post(`${baseUrl}/logout`, {}, {withCredentials: true})
+   → app.js → app.post('/api/logout', ...)
+        - res.clearCookie('token', ...)
+        - responds 200 { status: 'success', message: 'Logout successful' }
+   → back to Home.ts → window.alert(data.message) → router.navigate(['/login'])
+   → routes.ts matches "login" → Login component renders

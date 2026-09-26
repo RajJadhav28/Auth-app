@@ -1,0 +1,178 @@
+// register.scss
+
+$ink: #16241f;
+$ink-soft: #4a5c53;
+$ink-faint: #8a978f;
+$paper: #f7f5ef;
+$field-bg: #ffffff;
+$field-border: #cdd6cd;
+
+$focus: #1f6f5c;
+$focus-light: #2d8a72;
+$focus-deep: #134a3d;
+
+$error: #b3492f;
+$error-bg: #fdf1ee;
+
+$radius: 8px;
+$shadow-card: 0 1px 3px rgba(22, 36, 31, 0.06), 0 8px 24px rgba(22, 36, 31, 0.05);
+
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+
+  // color-graded background: soft radial wash behind a linear base
+  background:
+    radial-gradient(circle at 15% 10%, rgba($focus, 0.10), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba($focus-deep, 0.08), transparent 50%),
+    linear-gradient(180deg, $paper 0%, darken($paper, 2%) 100%);
+}
+
+form {
+  max-width: 380px;
+  margin: 4rem auto 0;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: $field-bg;
+  border-radius: 12px;
+  box-shadow: $shadow-card;
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, $focus, $focus-light) 1;
+}
+
+.form-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.01em;
+
+  // gradient text
+  background: linear-gradient(135deg, $focus-deep, $focus-light);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.form,
+form > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  position: relative;
+}
+
+label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $ink-soft;
+  letter-spacing: 0.01em;
+}
+
+input {
+  font: inherit;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid $field-border;
+  border-radius: $radius;
+  background: $field-bg;
+  color: $ink;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  &::placeholder {
+    color: $ink-faint;
+  }
+
+  &:hover:not(:focus) {
+    border-color: darken($field-border, 12%);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $focus;
+    box-shadow: 0 0 0 4px rgba($focus, 0.14);
+  }
+
+  &.ng-invalid.ng-touched {
+    border-color: $error;
+    background: $error-bg;
+
+    &:focus {
+      box-shadow: 0 0 0 4px rgba($error, 0.12);
+    }
+  }
+
+  &.ng-valid.ng-touched {
+    border-color: $focus-light;
+  }
+}
+
+.error-message {
+  font-size: 0.75rem;
+  color: $error;
+  margin-top: 0.15rem;
+  animation: fadeIn 0.15s ease;
+}
+
+button[type='submit'] {
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: $radius;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, $focus, $focus-deep);
+  background-size: 150% 150%;
+  background-position: 0% 50%;
+  transition: background-position 0.3s ease, opacity 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba($focus, 0.25);
+
+  &:hover:not(:disabled) {
+    background-position: 100% 50%;
+    box-shadow: 0 4px 14px rgba($focus, 0.35);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    background: mix($field-border, $focus, 60%);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  form {
+    margin: 2rem 1rem 0;
+    padding: 2rem 1.25rem;
+  }
+  .login-line {
+  text-align: center;
+  font-size: 0.875rem;
+  color: $ink-soft;
+  margin: 0.75rem 0 0 0;
+
+  a {
+    color: $focus;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+}
